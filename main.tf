@@ -39,6 +39,10 @@ resource "azurerm_linux_web_app" "webapp" {
     location = azurerm_resource_group.rg.location
     service_plan_id = azurerm_service_plan.asp.id
 
+        app_settings = {
+        WEBSITES_PORT = "3001"
+    }
+    
     site_config { 
     application_stack {
         docker_image_name = "uptime-kuma:2"   
