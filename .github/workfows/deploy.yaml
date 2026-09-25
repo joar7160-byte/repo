@@ -1,0 +1,40 @@
+name: deployment
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: Azure login 
+        uses: azure/login@v2
+        with: 
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      
+      - name: terraform init 
+        run: terraform init
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve
+
+      - name: ACR credentials
+        run: |
+          echo "ACR_USERNAME=$(az acr credential show -n uptimekumaacr --query username -o tsv)" >> $GITHUB_ENV
+          echo "ACR_PASSWORD=$(az acr credential show -n uptimekumaacr --query passwords[0].value -o tsv)" >> $GITHUB_ENV
+      
+      - name: Docker Image 
+        run: |
+          docker login uptimekumaacr.azurecr.io -u $ACR_USERNAME -p $ACR_PASSWORD
+          docker pull louislam/uptime-kuma:2
+          docker tag louislam/uptime-kuma:2 uptimekumaacr.azurecr.io/uptime-kuma:2
+          docker push uptimekumaacr.azurecr.io/uptime-kuma:2
+
+      - name: Final Terraform apply 
+        run: terraform apply -auto-approve
+      

@@ -27,7 +27,7 @@ resource "azurerm_container_registry" "acr"{
 resource "azurerm_service_plan" "asp"{
     name = "uptimekuma_asp"
     resource_group_name = azurerm_resource_group.rg.name
-    location = "East US"
+    location = azurerm_resource_group.rg.location
     os_type = "Linux"
     sku_name = "B1"
     }
@@ -41,7 +41,7 @@ resource "azurerm_linux_web_app" "webapp" {
 
     site_config { 
     application_stack {
-        docker_image_name = "louislam/uptime-kuma:2"   
+        docker_image_name = "uptime-kuma:2"   
         docker_registry_url = "https://${azurerm_container_registry.acr.login_server}"
     }
     }
