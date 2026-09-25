@@ -28,15 +28,15 @@ jobs:
 
       - name: ACR credentials
         run: |
-          echo "ACR_USERNAME=$(az acr credential show -n uptimekumaacr --query username -o tsv)" >> $GITHUB_ENV
-          echo "ACR_PASSWORD=$(az acr credential show -n uptimekumaacr --query passwords[0].value -o tsv)" >> $GITHUB_ENV
+          echo "ACR_USERNAME=$(az acr credential show -n uptimekumaacrjoar160 --query username -o tsv)" >> $GITHUB_ENV
+          echo "ACR_PASSWORD=$(az acr credential show -n uptimekumaacrjoar160 --query passwords[0].value -o tsv)" >> $GITHUB_ENV
       
       - name: Docker Image 
         run: |
-          docker login uptimekumaacr.azurecr.io -u $ACR_USERNAME -p $ACR_PASSWORD
+          docker login uptimekumaacrjoar160.azurecr.io -u $ACR_USERNAME -p $ACR_PASSWORD
           docker pull louislam/uptime-kuma:2
-          docker tag louislam/uptime-kuma:2 uptimekumaacr.azurecr.io/uptime-kuma:2
-          docker push uptimekumaacr.azurecr.io/uptime-kuma:2
+          docker tag louislam/uptime-kuma:2 uptimekumaacrjoar160.azurecr.io/uptime-kuma:2
+          docker push uptimekumaacrjoar160.azurecr.io/uptime-kuma:2
 
       - name: Final Terraform apply 
         run: terraform apply -auto-approve
