@@ -13,11 +13,11 @@ provider "azurerm" {
 
 resource "azurerm_resource_group" "rg" {
     name = "uptime-kuma-rg"
-    location = "East US"
+    location = "East US 2"
 }
 
 resource "azurerm_container_registry" "acr"{
-    name = "uptimekumaacr"
+    name = "uptimekumaacrjoar160"
     resource_group_name = azurerm_resource_group.rg.name
     location = azurerm_resource_group.rg.location
     sku = "Basic"
@@ -36,7 +36,7 @@ resource "azurerm_service_plan" "asp"{
 resource "azurerm_linux_web_app" "webapp" {
     name = "uptime-kuma-webapp-joar"
     resource_group_name = azurerm_resource_group.rg.name
-    location = "East US"
+    location = azurerm_resource_group.rg.location
     service_plan_id = azurerm_service_plan.asp.id
 
     site_config { 
