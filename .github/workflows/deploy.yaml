@@ -16,6 +16,9 @@ jobs:
         uses: azure/login@v2
         with: 
           creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Terraform Setup
+        uses: hashicorp/setup-terraform@v3
       
       - name: terraform init 
         run: terraform init
@@ -37,4 +40,5 @@ jobs:
 
       - name: Final Terraform apply 
         run: terraform apply -auto-approve
-      
+
+     
