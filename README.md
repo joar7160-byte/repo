@@ -28,26 +28,27 @@ flowchart TD
     I --> J["Azure Web App<br/>pulls image, listens on port 3001"]
     J --> K["Uptime Kuma live<br/>https://uptime-kuma-webapp-name.azurewebsites.net"]
 
-    style A fill:#e8f5e9,stroke:#2e7d32
-    style K fill:#e8f5e9,stroke:#2e7d32
-    style B fill:#e3f2fd,stroke:#1565c0
-    style J fill:#fff3e0,stroke:#ef6c00
+    classDef default fill:#ffffff,stroke:#333333,color:#000000
+    classDef startEnd fill:#c8e6c9,stroke:#2e7d32,color:#000000
+    classDef pipeline fill:#bbdefb,stroke:#1565c0,color:#000000
+    classDef webapp fill:#ffe0b2,stroke:#ef6c00,color:#000000
+
+    class A,K startEnd
+    class B pipeline
+    class J webapp
 ```
 
 **Stack:** Terraform · Docker · Azure Container Registry · Azure App Service · GitHub Actions · Azure CLI
 
 ## Key Decisions
 
-**Why did the pipeline keep failing with "resource already exists," and what does that reveal?**
-My local machine and the GitHub Actions runner each had their own separate, non-persistent Terraform state file. The runner starts from a completely empty environment every run and has no memory of what a previous run (or a manual local run) already created in Azure. This caused repeated "resource already exists" errors whenever a partial or manual deploy left resources behind that Terraform's current state didn't know about.
+**Why did the pipeline keep failing with "resource already exists," and what does that reveal?** My local machine and the GitHub Actions runner each had their own separate, non-persistent Terraform state file. The runner starts from a completely empty environment every run and has no memory of what a previous run (or a manual local run) already created in Azure. This caused repeated "resource already exists" errors whenever a partial or manual deploy left resources behind that Terraform's current state didn't know about.
 
 In a production setup, this is solved with a **remote backend** (e.g., an Azure Storage account holding the `.tfstate` file), so every environment that runs Terraform (a laptop, a CI runner, a teammate's machine) reads and writes the same shared state. For this project, I resolved conflicts manually by deleting the resource group between runs, which is a workable stopgap for a solo learning project but not a scalable practice for a team.
 
-**Why explicit ACR admin credentials on the Web App instead of managed identity?**
-The Web App initially failed to pull its image with an `ImagePullUnauthorizedFailure`, because it had no credentials configured to authenticate against the private registry. I resolved this by passing the ACR's admin username/password directly into the Web App's container settings via Terraform. Azure Managed Identity is the more secure pattern for production, since it stores no credentials on the resource at all, and would be the first thing I'd change if this were a real production service rather than a portfolio project.
+**Why explicit ACR admin credentials on the Web App instead of managed identity?** The Web App initially failed to pull its image with an `ImagePullUnauthorizedFailure`, because it had no credentials configured to authenticate against the private registry. I resolved this by passing the ACR's admin username/password directly into the Web App's container settings via Terraform. Azure Managed Identity is the more secure pattern for production, since it stores no credentials on the resource at all, and would be the first thing I'd change if this were a real production service rather than a portfolio project.
 
-**Why `WEBSITES_PORT` had to be set explicitly**
-Uptime Kuma listens on port 3001 inside its container, but Azure App Service assumes port 80 by default for incoming traffic. Without `WEBSITES_PORT=3001` set as an app setting, Azure couldn't route external requests to the running application, resulting in a 503 error even though the container was technically healthy.
+**Why `WEBSITES_PORT` had to be set explicitly** Uptime Kuma listens on port 3001 inside its container, but Azure App Service assumes port 80 by default for incoming traffic. Without `WEBSITES_PORT=3001` set as an app setting, Azure couldn't route external requests to the running application, resulting in a 503 error even though the container was technically healthy.
 
 ## What I'd Do Differently in Production
 
@@ -60,6 +61,7 @@ Uptime Kuma listens on port 3001 inside its container, but Azure App Service ass
 ## How to Deploy This Yourself
 
 ### Prerequisites
+
 - An Azure subscription (Azure for Students works fine)
 - [Terraform](https://developer.hashicorp.com/terraform/install) installed locally
 - [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli) installed and authenticated (`az login`)
@@ -67,6 +69,7 @@ Uptime Kuma listens on port 3001 inside its container, but Azure App Service ass
 - A GitHub repository with Actions enabled
 
 ### 1. Clone and configure
+
 ```bash
 git clone <your-repo-url>
 cd uptime-kuma-devops
@@ -75,7 +78,9 @@ cd uptime-kuma-devops
 Update the resource names in `main.tf` if needed. `azurerm_container_registry.acr.name` must be globally unique across all of Azure.
 
 ### 2. Create an Azure Service Principal
+
 This lets GitHub Actions authenticate to Azure on your behalf:
+
 ```bash
 az ad sp create-for-rbac --name "uptime-kuma-github-actions" \
   --role contributor \
@@ -84,10 +89,13 @@ az ad sp create-for-rbac --name "uptime-kuma-github-actions" \
 ```
 
 ### 3. Add GitHub Secrets
+
 In your repo: **Settings → Secrets and variables → Actions**, add:
+
 - `AZURE_CREDENTIALS`, the full JSON output from step 2
 
 ### 4. Push to trigger the pipeline
+
 ```bash
 git add .
 git commit -m "Deploy Uptime Kuma to Azure"
@@ -97,12 +105,17 @@ git push origin main
 GitHub Actions will provision the infrastructure, build and push the Docker image, and deploy the app automatically. Watch progress under the **Actions** tab.
 
 ### 5. Access the app
-Once the pipeline finishes, visit:
-https://<your-webapp-name>.azurewebsites.net
 
+Once the pipeline finishes, visit:
+
+```
+https://<your-webapp-name>.azurewebsites.net
+```
 
 ### 6. Tear down
+
 To avoid ongoing charges:
+
 ```bash
 az group delete --name uptime-kuma-rg --yes
 ```
@@ -110,7 +123,7 @@ az group delete --name uptime-kuma-rg --yes
 ## Screenshots
 
 | Step | Screenshot |
-|---|---|
+| --- | --- |
 | `main.tf`, the full Terraform configuration | `screenshots/02-main-tf-vscode.png` |
 | GitHub repo with Terraform + workflow files | `screenshots/03-github-repo-files.png` |
 | GitHub Secrets configured | `screenshots/04-github-secrets.png` |
