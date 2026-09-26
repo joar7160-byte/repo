@@ -42,13 +42,27 @@ flowchart TD
 
 ## Key Decisions
 
-**Why did the pipeline keep failing with "resource already exists," and what does that reveal?** My local machine and the GitHub Actions runner each had their own separate, non-persistent Terraform state file. The runner starts from a completely empty environment every run and has no memory of what a previous run (or a manual local run) already created in Azure. This caused repeated "resource already exists" errors whenever a partial or manual deploy left resources behind that Terraform's current state didn't know about.
+**Why did the pipeline keep failing with "resource already exists," and what does that reveal?**
 
-In a production setup, this is solved with a **remote backend** (e.g., an Azure Storage account holding the `.tfstate` file), so every environment that runs Terraform (a laptop, a CI runner, a teammate's machine) reads and writes the same shared state. For this project, I resolved conflicts manually by deleting the resource group between runs, which is a workable stopgap for a solo learning project but not a scalable practice for a team.
+- My local machine and the GitHub Actions runner each had their own separate, non-persistent Terraform state file
+- The runner starts from a completely empty environment every run and has no memory of what a previous run (or a manual local run) already created in Azure
+- This caused repeated "resource already exists" errors whenever a partial or manual deploy left resources behind that Terraform's current state didn't know about
+- In production, this is solved with a **remote backend** (e.g., an Azure Storage account holding the `.tfstate` file), so every environment that runs Terraform (a laptop, a CI runner, a teammate's machine) reads and writes the same shared state
+- For this project, I resolved conflicts manually by deleting the resource group between runs, a workable stopgap for a solo learning project but not a scalable practice for a team
 
-**Why explicit ACR admin credentials on the Web App instead of managed identity?** The Web App initially failed to pull its image with an `ImagePullUnauthorizedFailure`, because it had no credentials configured to authenticate against the private registry. I resolved this by passing the ACR's admin username/password directly into the Web App's container settings via Terraform. Azure Managed Identity is the more secure pattern for production, since it stores no credentials on the resource at all, and would be the first thing I'd change if this were a real production service rather than a portfolio project.
+**Why explicit ACR admin credentials on the Web App instead of managed identity?**
 
-**Why `WEBSITES_PORT` had to be set explicitly** Uptime Kuma listens on port 3001 inside its container, but Azure App Service assumes port 80 by default for incoming traffic. Without `WEBSITES_PORT=3001` set as an app setting, Azure couldn't route external requests to the running application, resulting in a 503 error even though the container was technically healthy.
+- The Web App initially failed to pull its image with an `ImagePullUnauthorizedFailure`, because it had no credentials configured to authenticate against the private registry
+- I resolved this by passing the ACR's admin username and password directly into the Web App's container settings via Terraform
+- Azure Managed Identity is the more secure pattern for production, since it stores no credentials on the resource at all
+- This would be the first thing I'd change if this were a real production service rather than a portfolio project
+
+**Why did `WEBSITES_PORT` have to be set explicitly?**
+
+- Uptime Kuma listens on port 3001 inside its container
+- Azure App Service assumes port 80 by default for incoming traffic
+- Without `WEBSITES_PORT=3001` set as an app setting, Azure couldn't route external requests to the running application
+- This resulted in a 503 error even though the container itself was technically healthy
 
 ## What I'd Do Differently in Production
 
