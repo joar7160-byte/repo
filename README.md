@@ -44,7 +44,7 @@ flowchart TD
 
 **Why did the pipeline keep failing with "resource already exists," and what does that reveal?**
 
-- My local machine and the GitHub Actions runner each had their own separate, non-persistent Terraform state file, so the runner had no memory of what a previous run had already created in Azure. This caused repeated "resource already exists" errors whenever a partial or manual deploy left resources behind. In production, this is solved with a remote backend (e.g., an Azure Storage account holding the `.tfstate` file) so every environment shares the same state. For this project, I resolved conflicts manually by deleting the resource group between runs, a workable stopgap for a solo learning project but not a scalable practice for a team.
+- My local machine and the GitHub Actions runner each had their own separate, non-persistent Terraform state file, so the runner had no memory of what a previous run had already created in Azure. This caused repeated "resource already exists" errors whenever a partial or manual deploy left resources behind. In production, this is solved with a remote backend (e.g., an Azure Storage account holding the `.tfstate` file) so every environment shares the same state. For this project, I resolved conflicts manually by deleting the resource group between runs, a workable stopgap for a solo learning project but practical for production.
 
 **Why explicit ACR admin credentials on the Web App instead of managed identity?**
 
